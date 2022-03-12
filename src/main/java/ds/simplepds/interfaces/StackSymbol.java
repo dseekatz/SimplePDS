@@ -5,4 +5,5 @@ package ds.simplepds.interfaces;
  * @param <S>
  */
 public interface StackSymbol<S> {
+    S unwrap();
 }

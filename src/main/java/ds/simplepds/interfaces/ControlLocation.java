@@ -6,4 +6,5 @@ package ds.simplepds.interfaces;
  * @param <L>
  */
 public interface ControlLocation<L> {
+    L unwrap();
 }
