@@ -7,7 +7,7 @@ package ds.simplepds.interfaces;
  */
 public interface Rule<L,S> {
 
-    Configuration<L,S> getStartConfiguration();
+    StartConfiguration<L,S> getStartConfiguration();
 
-    Configuration<L,S> getEndConfiguration();
+    EndConfiguration<L,S> getEndConfiguration();
 }
