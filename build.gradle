@@ -1,8 +1,9 @@
 plugins {
     id 'java'
+    id 'maven'
 }
 
-group 'ds'
+group 'com.github.dseekatz'
 version '1.0-SNAPSHOT'
 
 sourceCompatibility = JavaVersion.VERSION_17
