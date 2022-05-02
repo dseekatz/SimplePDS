@@ -11,22 +11,16 @@ import java.util.Queue;
 
 /**
  * An instance of the prestar algorithm for a given initial configuration and pushdown system
+ * TODO: should accept arbitraty initial automaton as input
  * @param <L>
  * @param <S>
  */
 public class Prestar<L,S> {
 
-    private EndConfiguration<L,S> initial;
-    private PAutomaton<L,S> saturatedAut;
-    private PushdownSystem<L,S> pushdownSystem;
+    private final EndConfiguration<L,S> initial;
+    private final PAutomaton<L,S> saturatedAut;
+    private final PushdownSystem<L,S> pushdownSystem;
 
-    /**
-     * Creates and runs an instance of the prestar algorithm.
-     *
-     * @param initialConfiguration to construct the initial PAutomaton
-     * @param pushdownSystem to be used to saturate the initial PAutomaton
-     * @throws InvalidInstanceException if the provided initial configuration is not present in the pushdown system
-     */
     public Prestar(EndConfiguration<L,S> initialConfiguration, PushdownSystem<L,S> pushdownSystem)
             throws InvalidInstanceException {
         // Check that the initial configuration occurs in the pushdown system as the end configuration
@@ -69,9 +63,10 @@ public class Prestar<L,S> {
         Queue<ControlLocation<L>> worklist = new LinkedList<>();
         worklist.add(initial.getControlLocation());
         while (!worklist.isEmpty()) {
+            ControlLocation<L> current = worklist.remove();
             pushdownSystem.getRules().forEach(rule -> {
                 ControlLocation<L> endLocation = rule.getEndConfiguration().getControlLocation();
-                if (saturatedAut.getAllStates().contains(endLocation)) {
+                if (endLocation.equals(current)) {
                     ControlLocation<L> startLocation = rule.getStartConfiguration().getControlLocation();
                     worklist.add(startLocation);
                     saturatedAut.addTransition(
@@ -81,7 +76,6 @@ public class Prestar<L,S> {
                     );
                 }
             });
-            worklist.remove();
         }
     }
 
