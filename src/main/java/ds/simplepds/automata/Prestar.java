@@ -11,7 +11,6 @@ import java.util.Queue;
 
 /**
  * An instance of the prestar algorithm for a given initial configuration and pushdown system
- * TODO: should accept arbitraty initial automaton as input
  * @param <L>
  * @param <S>
  */
@@ -23,6 +22,28 @@ public class Prestar<L,S> {
 
     public Prestar(EndConfiguration<L,S> initialConfiguration, PushdownSystem<L,S> pushdownSystem)
             throws InvalidInstanceException {
+        checkValidity(initialConfiguration, pushdownSystem);
+        this.initial = initialConfiguration;
+        this.pushdownSystem = pushdownSystem;
+        this.saturatedAut = createInitialAutomaton();
+        this.apply();
+    }
+
+    public Prestar(
+            EndConfiguration<L,S> initialConfiguration,
+            PushdownSystem<L,S> pushdownSystem,
+            PAutomaton<L,S> initialAutomaton
+    )
+            throws InvalidInstanceException {
+        checkValidity(initialConfiguration, pushdownSystem);
+        this.initial = initialConfiguration;
+        this.pushdownSystem = pushdownSystem;
+        this.saturatedAut = initialAutomaton;
+        this.apply();
+    }
+
+    private void checkValidity(EndConfiguration<L,S> initialConfiguration, PushdownSystem<L,S> pushdownSystem)
+            throws InvalidInstanceException {
         // Check that the initial configuration occurs in the pushdown system as the end configuration
         // of at least one rule
         if (pushdownSystem.getRules().stream()
@@ -32,10 +53,6 @@ public class Prestar<L,S> {
             throw new InvalidInstanceException("Could not create Prestar instance: provided initial configuration" +
                     "is not valid for the provided pushdown system");
         }
-        this.initial = initialConfiguration;
-        this.pushdownSystem = pushdownSystem;
-        this.saturatedAut = createInitialAutomaton();
-        this.apply();
     }
 
     /**
