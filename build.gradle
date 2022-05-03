@@ -11,6 +11,7 @@ targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
+    maven{ url "https://jitpack.io" }
 }
 
 dependencies {
@@ -22,3 +23,18 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.github.dseekatz'
+            artifactId = 'simplepds'
+            version = 'main-SNAPSHOT'
+
+            from components.java
+        }
+    }
+}
+
