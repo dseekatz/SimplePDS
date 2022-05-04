@@ -20,12 +20,17 @@ public class Poststar<L,S> {
     private final PAutomaton<L,S> saturatedAut;
     private final PushdownSystem<L,S> pushdownSystem;
 
-    public Poststar(StartConfiguration<L,S> initialConfiguration, PushdownSystem<L,S> pushdownSystem)
+    public Poststar(
+            StartConfiguration<L,S> initialConfiguration,
+            PushdownSystem<L,S> pushdownSystem,
+            L acceptingStateUnwrapValue,
+            S epsilonSymbolUnwrapValue
+    )
             throws InvalidInstanceException {
         checkValidity(initialConfiguration, pushdownSystem);
         this.initial = initialConfiguration;
         this.pushdownSystem = pushdownSystem;
-        this.saturatedAut = createInitialAutomaton();
+        this.saturatedAut = createInitialAutomaton(acceptingStateUnwrapValue, epsilonSymbolUnwrapValue);
         this.apply();
     }
 
@@ -46,7 +51,7 @@ public class Poststar<L,S> {
             throws InvalidInstanceException {
         // Check that the initial configuration occurs in the pushdown system as the start configuration
         // of at least one rule
-        if (pushdownSystem.getRules().stream()
+        if (pds.getRules().stream()
                 .map(Rule::getStartConfiguration)
                 .noneMatch(config -> config.equals(initialConfiguration))
         ) {
@@ -108,9 +113,11 @@ public class Poststar<L,S> {
      * The second is a dummy accepting (final) state.
      * We add a transition from the first to the second, labelled with the symbol of the initial configuration.
      * @return
+     * @param acceptingStateUnwrapValue
+     * @param epsilonSymbolUnwrapValue
      */
-    private PAutomaton<L,S> createInitialAutomaton() {
-        PAutomaton<L,S> initialAutomaton = new PAutomaton<>();
+    private PAutomaton<L,S> createInitialAutomaton(L acceptingStateUnwrapValue, S epsilonSymbolUnwrapValue) {
+        PAutomaton<L,S> initialAutomaton = new PAutomaton<>(acceptingStateUnwrapValue, epsilonSymbolUnwrapValue);
         initialAutomaton.addFinalState(initialAutomaton.getDummyAcceptingState());
         initialAutomaton.addTransition(
                 initial.getControlLocation(),

@@ -6,8 +6,10 @@ import ds.simplepds.interfaces.EndConfiguration;
 import ds.simplepds.interfaces.PushdownSystem;
 import ds.simplepds.interfaces.Rule;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 
 /**
  * An instance of the prestar algorithm for a given initial configuration and pushdown system
@@ -20,12 +22,17 @@ public class Prestar<L,S> {
     private final PAutomaton<L,S> saturatedAut;
     private final PushdownSystem<L,S> pushdownSystem;
 
-    public Prestar(EndConfiguration<L,S> initialConfiguration, PushdownSystem<L,S> pushdownSystem)
+    public Prestar(
+            EndConfiguration<L,S> initialConfiguration,
+            PushdownSystem<L,S> pushdownSystem,
+            L acceptingStateUnwrapValue,
+            S epsilonSymbolUnwrapValue
+    )
             throws InvalidInstanceException {
         checkValidity(initialConfiguration, pushdownSystem);
         this.initial = initialConfiguration;
         this.pushdownSystem = pushdownSystem;
-        this.saturatedAut = createInitialAutomaton();
+        this.saturatedAut = createInitialAutomaton(acceptingStateUnwrapValue, epsilonSymbolUnwrapValue);
         this.apply();
     }
 
@@ -61,9 +68,11 @@ public class Prestar<L,S> {
      * The second is a dummy accepting (final) state.
      * We add a transition from the first to the second, labelled with the epsilon (empty) label.
      * @return
+     * @param acceptingStateUnwrapValue
+     * @param epsilonSymbolUnwrapValue
      */
-    private PAutomaton<L,S> createInitialAutomaton() {
-        PAutomaton<L,S> initialAutomaton = new PAutomaton<>();
+    private PAutomaton<L,S> createInitialAutomaton(L acceptingStateUnwrapValue, S epsilonSymbolUnwrapValue) {
+        PAutomaton<L,S> initialAutomaton = new PAutomaton<>(acceptingStateUnwrapValue, epsilonSymbolUnwrapValue);
         initialAutomaton.addFinalState(initialAutomaton.getDummyAcceptingState());
         initialAutomaton.addTransition(
                 initial.getControlLocation(),
@@ -78,14 +87,18 @@ public class Prestar<L,S> {
      */
     private void apply() {
         Queue<ControlLocation<L>> worklist = new LinkedList<>();
+        Set<ControlLocation<L>> visited = new HashSet<>();
         worklist.add(initial.getControlLocation());
         while (!worklist.isEmpty()) {
             ControlLocation<L> current = worklist.remove();
+            visited.add(current);
             pushdownSystem.getRules().forEach(rule -> {
                 ControlLocation<L> endLocation = rule.getEndConfiguration().getControlLocation();
                 if (endLocation.equals(current)) {
                     ControlLocation<L> startLocation = rule.getStartConfiguration().getControlLocation();
-                    worklist.add(startLocation);
+                    if (!visited.contains(startLocation)) {
+                        worklist.add(startLocation);
+                    }
                     saturatedAut.addTransition(
                             startLocation,
                             saturatedAut.getDummyAcceptingState(),
