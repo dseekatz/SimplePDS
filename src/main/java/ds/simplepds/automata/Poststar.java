@@ -1,14 +1,18 @@
 package ds.simplepds.automata;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import ds.simplepds.interfaces.ControlLocation;
-import ds.simplepds.interfaces.EndConfiguration;
 import ds.simplepds.interfaces.PushdownSystem;
 import ds.simplepds.interfaces.Rule;
-import ds.simplepds.interfaces.StackSymbol;
-import ds.simplepds.interfaces.StartConfiguration;
 
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @param <L>
@@ -16,114 +20,172 @@ import java.util.Queue;
  */
 public class Poststar<L,S> {
 
-    private final StartConfiguration<L,S> initial;
     private final PAutomaton<L,S> saturatedAut;
+    private final PAutomaton<L,S>  initialAut;
     private final PushdownSystem<L,S> pushdownSystem;
+    private final Function<Rule<L,S>, L> generatedStateIdentifierFunction;
 
     public Poststar(
-            StartConfiguration<L,S> initialConfiguration,
             PushdownSystem<L,S> pushdownSystem,
-            L acceptingStateUnwrapValue,
-            S epsilonSymbolUnwrapValue
-    )
-            throws InvalidInstanceException {
-        checkValidity(initialConfiguration, pushdownSystem);
-        this.initial = initialConfiguration;
+            PAutomaton<L,S> initialAutomaton,
+            Function<Rule<L,S>, L> generatedStateIdentifierFunction
+    ) {
         this.pushdownSystem = pushdownSystem;
-        this.saturatedAut = createInitialAutomaton(acceptingStateUnwrapValue, epsilonSymbolUnwrapValue);
+        this.initialAut = initialAutomaton;
+        this.generatedStateIdentifierFunction = generatedStateIdentifierFunction;
+        this.saturatedAut = new PAutomaton<>();
         this.apply();
-    }
-
-    public Poststar(
-            StartConfiguration<L,S> initialConfiguration,
-            PushdownSystem<L,S> pushdownSystem,
-            PAutomaton<L,S> initialAutomaton
-    )
-            throws InvalidInstanceException {
-        checkValidity(initialConfiguration, pushdownSystem);
-        this.initial = initialConfiguration;
-        this.pushdownSystem = pushdownSystem;
-        this.saturatedAut = initialAutomaton;
-        this.apply();
-    }
-
-    private void checkValidity(StartConfiguration<L,S> initialConfiguration, PushdownSystem<L,S> pds)
-            throws InvalidInstanceException {
-        // Check that the initial configuration occurs in the pushdown system as the start configuration
-        // of at least one rule
-        if (pds.getRules().stream()
-                .map(Rule::getStartConfiguration)
-                .noneMatch(config -> config.equals(initialConfiguration))
-        ) {
-            throw new InvalidInstanceException("Could not create Poststar instance: provided initial configuration" +
-                    "is not valid for the provided pushdown system");
-        }
     }
 
     /**
-     * Implementation of post-*.  See Esparza, et al. (CAV00).
+     * Implementation of post-*.  See Esparza, et al. (CAV00) Alg. 3.
      */
     private void apply() {
-        // Step 1
-        pushdownSystem.getRules().stream()
-                .filter(rule -> rule.getStartConfiguration().getControlLocation().equals(initial.getControlLocation()))
-                .filter(rule -> rule.getEndConfiguration().getWord().size() == 2)
-                .forEach(rule -> {
-                    PAutomaton<L, S>.CreatedState createdState = saturatedAut.generateNewState(rule);
-                    ControlLocation<L> transitionStart = rule.getEndConfiguration().getControlLocation();
-                    StackSymbol<S> transitionSymbol = rule.getEndConfiguration().getWord().get(0);
-                    saturatedAut.addTransition(
-                            transitionStart,
-                            createdState,
-                            transitionSymbol
-                    );
-                });
+        // Initialize the worklist with transitions from the initial automaton
+        // that start at an initial state
+        Queue<PAutomaton.Transition<L, S>> worklist =
+                initialAut.getTransitionRelation()
+                        .stream()
+                        .filter(transition ->
+                                initialAut.getInitialStates()
+                                        .contains(transition.getStartState())
+                        ).collect(Collectors.toCollection(LinkedList::new));
 
-        // Step 2
-        Queue<ControlLocation<L>> worklist = new LinkedList<>();
-        worklist.add(initial.getControlLocation());
+        // All transitions from the initial automaton that are not in the worklist
+        // are added directly to the transition relation for the saturated automaton
+        Sets.difference(initialAut.getTransitionRelation(), new HashSet<>(worklist))
+                .forEach(saturatedAut::addTransition);
+
+        // Initialize the states (and final states) of the saturated automaton
+        initialAut.getAllStates().forEach(saturatedAut::addState);
+        initialAut.getFinalStates().forEach(saturatedAut::addFinalState);
+
+        // Initial processing of push rules. For each push rule we create a new
+        // state and add a transition from the push rule's end location
+        for (Rule<L,S> rule : pushdownSystem.getRules()) {
+            if (rule.getEndConfiguration().getWord().size() == 2) {
+                GeneratedState generated = new GeneratedState(rule);
+                saturatedAut.addState(generated);
+                worklist.add(new PAutomaton.Transition<>(
+                        rule.getEndConfiguration().getControlLocation(),
+                        generated,
+                        rule.getEndConfiguration().getWord().get(0)
+                ));
+            }
+        }
+
+        // Initialize a data structure to keep track of incoming
+        // epsilon transitions for each state
+        Multimap<ControlLocation<L>, ControlLocation<L>> incomingEpsilons = HashMultimap.create();
+
+        // Process the worklist
         while (!worklist.isEmpty()) {
-            ControlLocation<L> current = worklist.remove();
-            pushdownSystem.getRules().forEach(rule -> {
-                ControlLocation<L> startLocation = rule.getStartConfiguration().getControlLocation();
-                if (startLocation.equals(current)) {
-                    worklist.add(startLocation);
-                    EndConfiguration<L,S> endConfiguration = rule.getEndConfiguration();
-                    if (endConfiguration.getWord().size() == 2) {
-                        saturatedAut.addTransition(
-                                saturatedAut.getGeneratedStateFromRule(rule),
-                                saturatedAut.getDummyAcceptingState(),
-                                endConfiguration.getWord().get(1)
-                        );
-                    } else {
-                        saturatedAut.addTransition(
-                                endConfiguration.getControlLocation(),
-                                saturatedAut.getDummyAcceptingState(),
-                                endConfiguration.getWord().get(0)
-                        );
+            PAutomaton.Transition<L,S> current = worklist.remove();
+            if (!saturatedAut.getTransitionRelation().contains(current)) {
+                saturatedAut.addTransition(current);
+
+                // Handle PDS pop rules
+                for (Rule<L,S> rule : pushdownSystem.getRules()) {
+                    if (rule.getEndConfiguration().getWord().size() == 0 &&
+                        rule.getStartConfiguration().getControlLocation().equals(current.getStartState()) &&
+                        rule.getStartConfiguration().getStackSymbol().equals(current.getLabel()) &&
+                        !incomingEpsilons.containsEntry(
+                                current.getEndState(),
+                                rule.getEndConfiguration().getControlLocation()
+                        ))
+                    {
+                        incomingEpsilons.put(current.getEndState(), rule.getEndConfiguration().getControlLocation());
+                        for (PAutomaton.Transition<L,S> transition : saturatedAut.getTransitionRelation()) {
+                            if (transition.getStartState().equals(current.getEndState())) {
+                                worklist.add(new PAutomaton.Transition<>(
+                                        rule.getEndConfiguration().getControlLocation(),
+                                        transition.getEndState(),
+                                        transition.getLabel()
+                                ));
+                            }
+                        }
+                        if (saturatedAut.getFinalStates().contains(current.getEndState())) {
+                            saturatedAut.addFinalState(rule.getEndConfiguration().getControlLocation());
+                        }
                     }
                 }
-            });
+
+                // Handle PDS normal rules
+                for (Rule<L,S> rule : pushdownSystem.getRules()) {
+                    if (rule.getEndConfiguration().getWord().size() == 1 &&
+                        rule.getStartConfiguration().getControlLocation().equals(current.getStartState()) &&
+                        rule.getStartConfiguration().getStackSymbol().equals(current.getLabel()))
+                    {
+                        worklist.add(new PAutomaton.Transition<>(
+                                rule.getEndConfiguration().getControlLocation(),
+                                current.getEndState(),  // Is this correct? CAV00 paper presumably has a typo
+                                                        // and uses an unbound symbol as the end of this transition.
+                                rule.getEndConfiguration().getWord().get(0)
+                        ));
+                    }
+                }
+
+                // Handle PDS push rules
+                for (Rule<L,S> rule : pushdownSystem.getRules()) {
+                    if (rule.getEndConfiguration().getWord().size() == 2 &&
+                            rule.getStartConfiguration().getControlLocation().equals(current.getStartState()) &&
+                            rule.getStartConfiguration().getStackSymbol().equals(current.getLabel()))
+                    {
+                        GeneratedState generated = new GeneratedState(rule);
+                        saturatedAut.addTransition(new PAutomaton.Transition<>(
+                                generated,
+                                current.getEndState(),
+                                rule.getEndConfiguration().getWord().get(1)
+                        ));
+                        for (ControlLocation<L> state : incomingEpsilons.get(generated)) {
+                            worklist.add(new PAutomaton.Transition<>(
+                                    state,
+                                    current.getEndState(),
+                                    rule.getEndConfiguration().getWord().get(1)
+                            ));
+                        }
+                    }
+                }
+            }
         }
     }
 
-    /**
-     * Create an initial automaton A. Initially, the automaton contains two states.
-     * The first state is the control location specified by the initial configuration.
-     * The second is a dummy accepting (final) state.
-     * We add a transition from the first to the second, labelled with the symbol of the initial configuration.
-     * @return
-     * @param acceptingStateUnwrapValue
-     * @param epsilonSymbolUnwrapValue
-     */
-    private PAutomaton<L,S> createInitialAutomaton(L acceptingStateUnwrapValue, S epsilonSymbolUnwrapValue) {
-        PAutomaton<L,S> initialAutomaton = new PAutomaton<>(acceptingStateUnwrapValue, epsilonSymbolUnwrapValue);
-        initialAutomaton.addFinalState(initialAutomaton.getDummyAcceptingState());
-        initialAutomaton.addTransition(
-                initial.getControlLocation(),
-                initialAutomaton.getDummyAcceptingState(),
-                initial.getStackSymbol()
-        );
-        return initialAutomaton;
+    public PAutomaton<L, S> getSaturatedAut() {
+        return saturatedAut;
+    }
+
+    public GeneratedState createGeneratedStateFromRule(Rule<L,S> rule) {
+        return new GeneratedState(rule);
+    }
+
+    public class GeneratedState implements ControlLocation<L> {
+
+        private final Rule<L,S> generatingRule;
+
+        private GeneratedState(Rule<L,S> generatingRule) {
+            this.generatingRule = generatingRule;
+        }
+
+        @Override
+        public L unwrap() {
+            return generatedStateIdentifierFunction.apply(generatingRule);
+        }
+
+        public Rule<L,S> getGeneratingRule() {
+            return generatingRule;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            GeneratedState that = (GeneratedState) o;
+            return Objects.equals(generatingRule, that.generatingRule);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(generatingRule);
+        }
     }
 }

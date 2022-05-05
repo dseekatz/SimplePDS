@@ -1,6 +1,6 @@
 package ds.simplepds.interfaces;
 
-import java.util.Collection;
+import java.util.Set;
 
 /**
  * A Pushdown system is a collection of rules.
@@ -9,5 +9,5 @@ import java.util.Collection;
  */
 public interface PushdownSystem<L,S> {
 
-    Collection<Rule<L,S>> getRules();
+    Set<Rule<L,S>> getRules();
 }
