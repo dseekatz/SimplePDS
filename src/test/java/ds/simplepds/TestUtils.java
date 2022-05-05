@@ -1,6 +1,7 @@
 package ds.simplepds;
 
 import ds.simplepds.automata.PAutomaton;
+import ds.simplepds.automata.Poststar;
 import ds.simplepds.interfaces.ControlLocation;
 import ds.simplepds.interfaces.EndConfiguration;
 import ds.simplepds.interfaces.PushdownSystem;
@@ -8,24 +9,24 @@ import ds.simplepds.interfaces.Rule;
 import ds.simplepds.interfaces.StackSymbol;
 import ds.simplepds.interfaces.StartConfiguration;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class TestUtils {
 
-    public static ControlLocation<Integer> createControlLocation(int number) {
-        return new TestControlLocation(number);
+    public static ControlLocation<String> createControlLocation(String s) {
+        return new TestControlLocation(s);
     }
 
     public static StackSymbol<String> createStackSymbol(String s) {
         return new TestStackSymbol(s);
     }
 
-    public static StartConfiguration<Integer, String> createStartConfiguration(
-            ControlLocation<Integer> cl,
+    public static StartConfiguration<String, String> createStartConfiguration(
+            ControlLocation<String> cl,
             StackSymbol<String> ss
     ) {
         return new StartConfiguration<>() {
@@ -35,14 +36,14 @@ public class TestUtils {
             }
 
             @Override
-            public ControlLocation<Integer> getControlLocation() {
+            public ControlLocation<String> getControlLocation() {
                 return cl;
             }
         };
     }
 
-    public static EndConfiguration<Integer, String> createNormalEndConfiguration(
-            ControlLocation<Integer> cl,
+    public static EndConfiguration<String, String> createNormalEndConfiguration(
+            ControlLocation<String> cl,
             StackSymbol<String> ss
     ) {
         return new EndConfiguration<>() {
@@ -57,13 +58,13 @@ public class TestUtils {
             }
 
             @Override
-            public ControlLocation<Integer> getControlLocation() {
+            public ControlLocation<String> getControlLocation() {
                 return cl;
             }
         };
     }
 
-    public static EndConfiguration<Integer, String> createPopEndConfiguration(ControlLocation<Integer> cl) {
+    public static EndConfiguration<String, String> createPopEndConfiguration(ControlLocation<String> cl) {
         return new EndConfiguration<>() {
 
             @Override
@@ -72,14 +73,14 @@ public class TestUtils {
             }
 
             @Override
-            public ControlLocation<Integer> getControlLocation() {
+            public ControlLocation<String> getControlLocation() {
                 return cl;
             }
         };
     }
 
-    public static EndConfiguration<Integer, String> createPushEndConfiguration(
-            ControlLocation<Integer> cl,
+    public static EndConfiguration<String, String> createPushEndConfiguration(
+            ControlLocation<String> cl,
             StackSymbol<String> ss1,
             StackSymbol<String> ss2
     ) {
@@ -96,34 +97,34 @@ public class TestUtils {
             }
 
             @Override
-            public ControlLocation<Integer> getControlLocation() {
+            public ControlLocation<String> getControlLocation() {
                 return cl;
             }
         };
     }
 
-    public static Rule<Integer, String> createRule(
-            StartConfiguration<Integer, String> startConfiguration,
-            EndConfiguration<Integer, String> endConfiguration
+    public static Rule<String, String> createRule(
+            StartConfiguration<String, String> startConfiguration,
+            EndConfiguration<String, String> endConfiguration
     ) {
         return new Rule<>() {
             @Override
-            public StartConfiguration<Integer, String> getStartConfiguration() {
+            public StartConfiguration<String, String> getStartConfiguration() {
                 return startConfiguration;
             }
 
             @Override
-            public EndConfiguration<Integer, String> getEndConfiguration() {
+            public EndConfiguration<String, String> getEndConfiguration() {
                 return endConfiguration;
             }
         };
     }
 
-    public static PushdownSystem<Integer, String> createPDS(Collection<Rule<Integer, String>> rules) {
+    public static PushdownSystem<String, String> createPDS(Set<Rule<String, String>> rules) {
         return () -> rules;
     }
 
-    public static PAutomaton.Transition<Integer, String> createTransition(Integer start, Integer end, String label) {
+    public static PAutomaton.Transition<String, String> createTransition(String start, String end, String label) {
         return new PAutomaton.Transition<>(
                 createControlLocation(start),
                 createControlLocation(end),
@@ -131,16 +132,47 @@ public class TestUtils {
         );
     }
 
-    public static class TestControlLocation implements ControlLocation<Integer> {
+    public static PAutomaton.Transition<String, String> createTransition(ControlLocation<String> start, String end, String label) {
+        return new PAutomaton.Transition<>(
+                start,
+                createControlLocation(end),
+                createStackSymbol(label)
+        );
+    }
 
-        private final Integer value;
+    public static PAutomaton.Transition<String, String> createTransition(String start, ControlLocation<String> end, String label) {
+        return new PAutomaton.Transition<>(
+                createControlLocation(start),
+                end,
+                createStackSymbol(label)
+        );
+    }
 
-        private TestControlLocation(int number) {
-            this.value = number;
+    public static PAutomaton.Transition<String, String> createTransition(ControlLocation<String> start, ControlLocation<String> end, String label) {
+        return new PAutomaton.Transition<>(
+                start,
+                end,
+                createStackSymbol(label)
+        );
+    }
+
+    public static Poststar<String, String>.GeneratedState createGeneratedState(
+            Rule<String, String> rule,
+            Poststar<String, String> instance
+    ) {
+        return instance.createGeneratedStateFromRule(rule);
+    }
+
+    public static class TestControlLocation implements ControlLocation<String> {
+
+        private final String value;
+
+        private TestControlLocation(String s) {
+            this.value = s;
         }
 
         @Override
-        public Integer unwrap() {
+        public String unwrap() {
             return value;
         }
 

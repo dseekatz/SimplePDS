@@ -1,6 +1,5 @@
 package ds.simplepds;
 
-import ds.simplepds.automata.InvalidInstanceException;
 import ds.simplepds.automata.PAutomaton;
 import ds.simplepds.automata.Poststar;
 import ds.simplepds.automata.Prestar;
@@ -13,122 +12,98 @@ import ds.simplepds.interfaces.StartConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class PDSTests {
 
-    private static PushdownSystem<Integer, String> pushAndPopPDS;
-    private static StartConfiguration<Integer, String> poststarInitial;
-    private static EndConfiguration<Integer, String> prestarInitial;
-    private static StartConfiguration<Integer, String> invalidPoststarInitial;
-    private static EndConfiguration<Integer, String> invalidPrestarInitial;
-    private static PAutomaton<Integer, String> initialAut;
+    private static PushdownSystem<String, String> pushAndPopPDS;
+    private static PAutomaton<String, String> initialAut;
+    private static Rule<String, String> stateGeneratingRuleM1;
+    private static Rule<String, String> stateGeneratingRuleM2;
 
     @BeforeEach
     public void build() {
-        ControlLocation<Integer> cl1 = TestUtils.createControlLocation(1);
-        ControlLocation<Integer> cl2 = TestUtils.createControlLocation(2);
-        StackSymbol<String> ssa = TestUtils.createStackSymbol("a");
-        StackSymbol<String> ssb = TestUtils.createStackSymbol("b");
-        StackSymbol<String> ssc = TestUtils.createStackSymbol("c");
-        StackSymbol<String> ssd = TestUtils.createStackSymbol("d");
+        // See example in Esparza, et al. (CAV00)
+        ControlLocation<String> p0 = TestUtils.createControlLocation("p0");
+        ControlLocation<String> p1 = TestUtils.createControlLocation("p1");
+        ControlLocation<String> p2 = TestUtils.createControlLocation("p2");
+        StackSymbol<String> g0 = TestUtils.createStackSymbol("g0");
+        StackSymbol<String> g1 = TestUtils.createStackSymbol("g1");
+        StackSymbol<String> g2 = TestUtils.createStackSymbol("g2");
 
-        StartConfiguration<Integer, String> paStart = TestUtils.createStartConfiguration(cl1, ssa);
-        StartConfiguration<Integer, String> qbStart = TestUtils.createStartConfiguration(cl2, ssb);
-        StartConfiguration<Integer, String> pcStart = TestUtils.createStartConfiguration(cl1, ssc);
-        StartConfiguration<Integer, String> pdStart = TestUtils.createStartConfiguration(cl1, ssd);
+        StartConfiguration<String, String> p0g0Start = TestUtils.createStartConfiguration(p0, g0);
+        StartConfiguration<String, String> p1g1Start = TestUtils.createStartConfiguration(p1, g1);
+        StartConfiguration<String, String> p2g2Start = TestUtils.createStartConfiguration(p2, g2);
+        StartConfiguration<String, String> p0g1Start = TestUtils.createStartConfiguration(p0, g1);
 
-        EndConfiguration<Integer, String> qbEnd = TestUtils.createNormalEndConfiguration(cl2, ssb);
-        EndConfiguration<Integer, String> pcEnd = TestUtils.createNormalEndConfiguration(cl1, ssc);
-        EndConfiguration<Integer, String> pdEnd = TestUtils.createNormalEndConfiguration(cl1, ssd);
-        EndConfiguration<Integer, String> padEnd = TestUtils.createPushEndConfiguration(cl1, ssa, ssd);
-        EndConfiguration<Integer, String> pEnd = TestUtils.createPopEndConfiguration(cl1);
+        EndConfiguration<String, String> p1g1g0End = TestUtils.createPushEndConfiguration(p1, g1, g0);
+        EndConfiguration<String, String> p2g2g0End = TestUtils.createPushEndConfiguration(p2, g2, g0);
+        EndConfiguration<String, String> p0g1End = TestUtils.createNormalEndConfiguration(p0, g1);
+        EndConfiguration<String, String> p0End = TestUtils.createPopEndConfiguration(p0);
 
-        Collection<Rule<Integer, String>> rules = new HashSet<>();
-        rules.add(TestUtils.createRule(paStart, qbEnd));
-        rules.add(TestUtils.createRule(paStart, pcEnd));
-        rules.add(TestUtils.createRule(qbStart, pdEnd));
-        rules.add(TestUtils.createRule(pcStart, padEnd));
-        rules.add(TestUtils.createRule(pdStart, pEnd));
+        Set<Rule<String, String>> rules = new HashSet<>();
+        Rule<String, String> r1 = TestUtils.createRule(p0g0Start, p1g1g0End);
+        rules.add(r1);
+        Rule<String, String> r2 = TestUtils.createRule(p1g1Start, p2g2g0End);
+        rules.add(r2);
+        rules.add(TestUtils.createRule(p2g2Start, p0g1End));
+        rules.add(TestUtils.createRule(p0g1Start, p0End));
 
         pushAndPopPDS = TestUtils.createPDS(rules);
-        poststarInitial = pcStart;
-        prestarInitial = qbEnd;
-        invalidPoststarInitial = TestUtils.createStartConfiguration(cl2, ssd);
-        invalidPrestarInitial = TestUtils.createNormalEndConfiguration(cl2, ssd);
+        initialAut = new PAutomaton<>();
+        initialAut.addFinalState(TestUtils.createControlLocation("s2"));
+        initialAut.addTransition(TestUtils.createTransition("s1", "s2", "g0"));
+        initialAut.addTransition(TestUtils.createTransition("p0", "s1", "g0"));
+        initialAut.addInitialState(p0);
+        initialAut.addInitialState(p1);
+        initialAut.addInitialState(p2);
 
-        // TODO: initialize the arbitrary starting automaton
-
+        stateGeneratingRuleM1 = r1;
+        stateGeneratingRuleM2 = r2;
     }
 
     @Test
-    public void prestarException() {
-        try {
-            Prestar<Integer, String> prestar = new Prestar<>(
-                    invalidPrestarInitial,
-                    pushAndPopPDS,
-                    0,
-                    "eps"
-            );
-            assert false; // Should throw exception before this line
-        } catch (InvalidInstanceException ignored) {}
+    public void testPrestar() {
+        Prestar<String, String> prestar = new Prestar<>(pushAndPopPDS, initialAut);
+        //System.out.println(prestar.getSaturatedAut().toDotString());
+        Set<PAutomaton.Transition<String, String>> relation = prestar.getSaturatedAut().getTransitionRelation();
+        assert relation.size() == 7;
+        assert relation.contains(TestUtils.createTransition("p2", "p0", "g2"));
+        assert relation.contains(TestUtils.createTransition("p0", "p0", "g1"));
+        assert relation.contains(TestUtils.createTransition("p0", "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", "s2", "g0"));
+        assert relation.contains(TestUtils.createTransition("p1", "s1", "g1"));
+        assert relation.contains(TestUtils.createTransition("p1", "s2", "g1"));
+        assert relation.contains(TestUtils.createTransition("s1", "s2", "g0"));
     }
 
     @Test
-    public void poststarException() {
-        try {
-            Poststar<Integer, String> poststar = new Poststar<>(
-                    invalidPoststarInitial,
-                    pushAndPopPDS,
-                    0,
-                    "eps"
-            );
-            assert false; // Should throw exception before this line
-        } catch (InvalidInstanceException ignored) {}
-    }
-
-    @Test
-    public void prestarTest() {
-        try {
-            Prestar<Integer, String> prestar = new Prestar<>(
-                    prestarInitial,
-                    pushAndPopPDS,
-                    0,
-                    "eps"
-            );
-            System.out.println(prestar.getSaturatedAut().toDotString());
-            Set<PAutomaton.Transition<Integer,String>> relation = prestar.getSaturatedAut().getTransitionRelation();
-            assert relation.contains(
-                    TestUtils.createTransition(2, 0, "b")
-            );
-            assert relation.contains(
-                    TestUtils.createTransition(1, 0, "c")
-            );
-            assert relation.contains(
-                    TestUtils.createTransition(1, 0, "a")
-            );
-            assert relation.contains(
-                    TestUtils.createTransition(1, 1, "d")
-            );
-        } catch (InvalidInstanceException e) {
-            assert false;
-        }
-    }
-
-    @Test
-    public void poststarTest() {
-
-    }
-
-    @Test
-    public void prestarWithInitialAut() {
-
-    }
-
-    @Test
-    public void poststarWithInitialAut() {
-
+    public void testPoststar() {
+        Map<Rule<String, String>, Integer> generatedStateIndexMap = new HashMap<>();
+        Poststar<String, String> poststar = new Poststar<>(
+                pushAndPopPDS,
+                initialAut,
+                rule -> {
+                    int index = generatedStateIndexMap.computeIfAbsent(rule, r -> generatedStateIndexMap.size() + 1);
+                    return "m" + index;
+                } // silly but effective way to get a simple unique identifier for generated states
+        );
+        //System.out.println(poststar.getSaturatedAut().toDotString());
+        Set<PAutomaton.Transition<String, String>> relation = poststar.getSaturatedAut().getTransitionRelation();
+        Poststar<String, String>.GeneratedState m1 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM1);
+        Poststar<String, String>.GeneratedState m2 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM2);
+        assert relation.size() == 9;
+        assert relation.contains(TestUtils.createTransition("s1", "s2", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", m1, "g0"));
+        assert relation.contains(TestUtils.createTransition(m1, "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p1", m1, "g1"));
+        assert relation.contains(TestUtils.createTransition(m1, m1, "g0"));
+        assert relation.contains(TestUtils.createTransition(m2, m1, "g0"));
+        assert relation.contains(TestUtils.createTransition("p2", m2, "g2"));
+        assert relation.contains(TestUtils.createTransition("p0", m2, "g1"));
     }
 }
