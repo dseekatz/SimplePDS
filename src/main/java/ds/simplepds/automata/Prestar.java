@@ -44,6 +44,11 @@ public class Prestar<L,S> {
         Queue<PAutomaton.Transition<L, S>> worklist = new LinkedList<>(initialAut.getTransitionRelation());
         Set<Rule<L,S>> deltaPrime = new HashSet<>();
 
+        // Initialize the states (and final states) of the saturated automaton
+        initialAut.getAllStates().forEach(saturatedAut::addState);
+        initialAut.getFinalStates().forEach(saturatedAut::addFinalState);
+        initialAut.getInitialStates().forEach(saturatedAut::addInitialState);
+
         // Handle PDS pop rules
         for (Rule<L,S> rule : pushdownSystem.getRules()) {
             if (rule.getEndConfiguration().getWord().size()== 0) {

@@ -56,9 +56,10 @@ public class Poststar<L,S> {
         Sets.difference(initialAut.getTransitionRelation(), new HashSet<>(worklist))
                 .forEach(saturatedAut::addTransition);
 
-        // Initialize the states (and final states) of the saturated automaton
+        // Initialize the states of the saturated automaton
         initialAut.getAllStates().forEach(saturatedAut::addState);
         initialAut.getFinalStates().forEach(saturatedAut::addFinalState);
+        initialAut.getInitialStates().forEach(saturatedAut::addInitialState);
 
         // Initial processing of push rules. For each push rule we create a new
         // state and add a transition from the push rule's end location
