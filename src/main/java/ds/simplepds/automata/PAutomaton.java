@@ -69,14 +69,14 @@ public class PAutomaton<L,S> {
         out.append("digraph {\n");
         for (Transition<L,S> t : transitionRelation) {
             out.append("\t\"")
-                    .append(t.startState.unwrap())
+                    .append(t.startState)
                     .append("\"")
                     .append(" -> ")
                     .append("\"")
-                    .append(t.endState.unwrap())
+                    .append(t.endState)
                     .append("\"")
                     .append("[label=\"")
-                    .append(t.label.unwrap())
+                    .append(t.label)
                     .append("\"];\n");
         }
         out.append("}");
