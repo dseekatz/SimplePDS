@@ -22,9 +22,9 @@ import java.util.Set;
  */
 public class Prestar<L,S> {
 
-    private final PAutomaton<L,S> saturatedAut;
-    private final PAutomaton<L,S> initialAut;
-    private final PushdownSystem<L,S> pushdownSystem;
+    protected final PAutomaton<L,S> saturatedAut;
+    protected final PAutomaton<L,S> initialAut;
+    protected final PushdownSystem<L,S> pushdownSystem;
 
     public Prestar(
             PushdownSystem<L,S> pushdownSystem,
@@ -116,12 +116,12 @@ public class Prestar<L,S> {
         return saturatedAut;
     }
 
-    private static class GeneratedRule<L,S> implements Rule<L,S> {
+    protected static class GeneratedRule<L,S> implements Rule<L,S> {
 
         private final StartConfiguration<L,S> startConfiguration;
         private final EndConfiguration<L,S> endConfiguration;
 
-        private GeneratedRule(
+        protected GeneratedRule(
                 ControlLocation<L> startLoc,
                 StackSymbol<S> startSym,
                 ControlLocation<L> endLoc,

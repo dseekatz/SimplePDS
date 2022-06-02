@@ -1,5 +1,8 @@
 package ds.simplepds;
 
+import ds.simplepds.automata.FastLookupRuleMap;
+import ds.simplepds.automata.HashBasedPostStar;
+import ds.simplepds.automata.HashBasedPreStar;
 import ds.simplepds.automata.PAutomaton;
 import ds.simplepds.automata.Poststar;
 import ds.simplepds.automata.Prestar;
@@ -81,8 +84,54 @@ public class PDSTests {
     }
 
     @Test
+    public void testHashBasedPrestar() {
+        FastLookupRuleMap<String, String> fastLookupRuleMap = new FastLookupRuleMap<>(pushAndPopPDS);
+        Prestar<String, String> prestar = new HashBasedPreStar<>(pushAndPopPDS, initialAut, fastLookupRuleMap);
+        //System.out.println(prestar.getSaturatedAut().toDotString());
+        Set<PAutomaton.Transition<String, String>> relation = prestar.getSaturatedAut().getTransitionRelation();
+        assert relation.size() == 7;
+        assert relation.contains(TestUtils.createTransition("p2", "p0", "g2"));
+        assert relation.contains(TestUtils.createTransition("p0", "p0", "g1"));
+        assert relation.contains(TestUtils.createTransition("p0", "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", "s2", "g0"));
+        assert relation.contains(TestUtils.createTransition("p1", "s1", "g1"));
+        assert relation.contains(TestUtils.createTransition("p1", "s2", "g1"));
+        assert relation.contains(TestUtils.createTransition("s1", "s2", "g0"));
+    }
+
+    @Test
     public void testPoststar() {
         Map<Rule<String, String>, Integer> generatedStateIndexMap = new HashMap<>();
+        FastLookupRuleMap<String, String> fastLookupRuleMap = new FastLookupRuleMap<>(pushAndPopPDS);
+        Poststar<String, String> poststar = new HashBasedPostStar<>(
+                pushAndPopPDS,
+                initialAut,
+                rule -> {
+                    int index = generatedStateIndexMap.computeIfAbsent(rule, r -> generatedStateIndexMap.size() + 1);
+                    return "m" + index;
+                }, // silly but effective way to get a simple unique identifier for generated states
+                fastLookupRuleMap
+        );
+        //System.out.println(poststar.getSaturatedAut().toDotString());
+        Set<PAutomaton.Transition<String, String>> relation = poststar.getSaturatedAut().getTransitionRelation();
+        Poststar<String, String>.GeneratedState m1 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM1);
+        Poststar<String, String>.GeneratedState m2 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM2);
+        assert relation.size() == 9;
+        assert relation.contains(TestUtils.createTransition("s1", "s2", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", m1, "g0"));
+        assert relation.contains(TestUtils.createTransition(m1, "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p1", m1, "g1"));
+        assert relation.contains(TestUtils.createTransition(m1, m1, "g0"));
+        assert relation.contains(TestUtils.createTransition(m2, m1, "g0"));
+        assert relation.contains(TestUtils.createTransition("p2", m2, "g2"));
+        assert relation.contains(TestUtils.createTransition("p0", m2, "g1"));
+    }
+
+    @Test
+    public void testHashBasedPoststar() {
+        Map<Rule<String, String>, Integer> generatedStateIndexMap = new HashMap<>();
+
         Poststar<String, String> poststar = new Poststar<>(
                 pushAndPopPDS,
                 initialAut,
