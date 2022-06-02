@@ -13,6 +13,7 @@ public class FastLookupRuleMap<L,S> {
     private final Multimap<Integer, Rule<L,S>> wordSizeMultimap =
             HashMultimap.create();
     private final Multimap<ControlLocation<L>, Rule<L,S>> startStateMultimap = HashMultimap.create();
+    private final Multimap<ControlLocation<L>, Rule<L,S>> endStateMultimap = HashMultimap.create();
 
     public FastLookupRuleMap(PushdownSystem<L,S> pds) {
         this.pds = pds;
@@ -23,6 +24,10 @@ public class FastLookupRuleMap<L,S> {
             );
             startStateMultimap.put(
                     rule.getStartConfiguration().getControlLocation(),
+                    rule
+            );
+            endStateMultimap.put(
+                    rule.getEndConfiguration().getControlLocation(),
                     rule
             );
         });
@@ -36,14 +41,7 @@ public class FastLookupRuleMap<L,S> {
         return startStateMultimap.get(controlLocation);
     }
 
-    void addRule(Rule<L,S> rule) {
-        wordSizeMultimap.put(
-                rule.getEndConfiguration().getWord().size(),
-                rule
-        );
-        startStateMultimap.put(
-                rule.getStartConfiguration().getControlLocation(),
-                rule
-        );
+    public Collection<Rule<L,S>> lookupByEndState(ControlLocation<L> controlLocation) {
+        return endStateMultimap.get(controlLocation);
     }
 }

@@ -71,6 +71,7 @@ public class PDSTests {
     @Test
     public void testPrestar() {
         Prestar<String, String> prestar = new Prestar<>(pushAndPopPDS, initialAut);
+        prestar.apply();
         //System.out.println(prestar.getSaturatedAut().toDotString());
         Set<PAutomaton.Transition<String, String>> relation = prestar.getSaturatedAut().getTransitionRelation();
         assert relation.size() == 7;
@@ -87,6 +88,7 @@ public class PDSTests {
     public void testHashBasedPrestar() {
         FastLookupRuleMap<String, String> fastLookupRuleMap = new FastLookupRuleMap<>(pushAndPopPDS);
         Prestar<String, String> prestar = new HashBasedPreStar<>(pushAndPopPDS, initialAut, fastLookupRuleMap);
+        prestar.apply();
         //System.out.println(prestar.getSaturatedAut().toDotString());
         Set<PAutomaton.Transition<String, String>> relation = prestar.getSaturatedAut().getTransitionRelation();
         assert relation.size() == 7;
@@ -112,6 +114,7 @@ public class PDSTests {
                 }, // silly but effective way to get a simple unique identifier for generated states
                 fastLookupRuleMap
         );
+        poststar.apply();
         //System.out.println(poststar.getSaturatedAut().toDotString());
         Set<PAutomaton.Transition<String, String>> relation = poststar.getSaturatedAut().getTransitionRelation();
         Poststar<String, String>.GeneratedState m1 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM1);
@@ -140,6 +143,7 @@ public class PDSTests {
                     return "m" + index;
                 } // silly but effective way to get a simple unique identifier for generated states
         );
+        poststar.apply();
         //System.out.println(poststar.getSaturatedAut().toDotString());
         Set<PAutomaton.Transition<String, String>> relation = poststar.getSaturatedAut().getTransitionRelation();
         Poststar<String, String>.GeneratedState m1 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM1);

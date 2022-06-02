@@ -33,13 +33,12 @@ public class Prestar<L,S> {
         this.pushdownSystem = pushdownSystem;
         this.saturatedAut = new PAutomaton<>();
         this.initialAut = initialAutomaton;
-        this.apply();
     }
 
     /**
      * Implementation of pre-* (see Esparza, et al. (CAV00) Alg. 1)
      */
-    private void apply() {
+    public void apply() {
         //Initialize the worklist and the set of synthesized PDS rules (deltaPrime)
         Queue<PAutomaton.Transition<L, S>> worklist = new LinkedList<>(initialAut.getTransitionRelation());
         Set<Rule<L,S>> deltaPrime = new HashSet<>();

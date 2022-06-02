@@ -36,7 +36,8 @@ public class HashBasedPostStar<L,S> extends Poststar<L,S>{
     /**
      * Implementation of post-*.  See Esparza, et al. (CAV00) Alg. 3.
      */
-    private void apply() {
+    @Override
+    public void apply() {
         // Initialize the worklist with transitions from the initial automaton
         // that start at an initial state
         Queue<PAutomaton.Transition<L, S>> worklist =

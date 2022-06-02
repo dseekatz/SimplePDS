@@ -34,13 +34,12 @@ public class Poststar<L,S> {
         this.initialAut = initialAutomaton;
         this.generatedStateIdentifierFunction = generatedStateIdentifierFunction;
         this.saturatedAut = new PAutomaton<>();
-        this.apply();
     }
 
     /**
      * Implementation of post-*.  See Esparza, et al. (CAV00) Alg. 3.
      */
-    private void apply() {
+    public void apply() {
         // Initialize the worklist with transitions from the initial automaton
         // that start at an initial state
         Queue<PAutomaton.Transition<L, S>> worklist =

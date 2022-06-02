@@ -31,9 +31,11 @@ public class HashBasedPreStar<L,S> extends Prestar<L,S>{
     /**
      * Implementation of pre-* (see Esparza, et al. (CAV00) Alg. 1)
      */
-    private void apply() {
+    @Override
+    public void apply() {
         //Initialize the worklist and the set of synthesized PDS rules (deltaPrime)
         Queue<PAutomaton.Transition<L, S>> worklist = new LinkedList<>(initialAut.getTransitionRelation());
+        Set<Rule<L,S>> deltaPrime = new HashSet<>();
 
         // Initialize the states (and final states) of the saturated automaton
         initialAut.getAllStates().forEach(saturatedAut::addState);
@@ -41,26 +43,39 @@ public class HashBasedPreStar<L,S> extends Prestar<L,S>{
         initialAut.getInitialStates().forEach(saturatedAut::addInitialState);
 
         // Handle PDS pop rules
-        for (Rule<L, S> rule : fastLookupMap.lookupByWordSize(0)) {
-                worklist.add(
-                        new PAutomaton.Transition<>(
-                                rule.getStartConfiguration().getControlLocation(),
-                                rule.getEndConfiguration().getControlLocation(),
-                                rule.getStartConfiguration().getStackSymbol()
-                        )
-                );
+        for (Rule<L,S> rule : fastLookupMap.lookupByWordSize(0)) {
+            worklist.add(
+                    new PAutomaton.Transition<>(
+                            rule.getStartConfiguration().getControlLocation(),
+                            rule.getEndConfiguration().getControlLocation(),
+                            rule.getStartConfiguration().getStackSymbol()
+                    )
+            );
         }
 
         // Process the worklist
         while (!worklist.isEmpty()) {
-            PAutomaton.Transition<L, S> current = worklist.remove();
+            PAutomaton.Transition<L,S> current = worklist.remove();
             if (!saturatedAut.getTransitionRelation().contains(current)) {
                 saturatedAut.addTransition(current);
 
                 // Handle PDS normal Rules
-                for (Rule<L, S> rule : fastLookupMap.lookupByStartState(current.getStartState())) {
+                for (Rule<L,S> rule : fastLookupMap.lookupByEndState(current.getStartState())) {
                     if (rule.getEndConfiguration().getWord().size() == 1 &&
-                            rule.getEndConfiguration().getWord().get(0).equals(current.getLabel())) {
+                            rule.getEndConfiguration().getWord().get(0).equals(current.getLabel()))
+                    {
+                        worklist.add(new PAutomaton.Transition<>(
+                                rule.getStartConfiguration().getControlLocation(),
+                                current.getEndState(),
+                                rule.getStartConfiguration().getStackSymbol()
+                        ));
+                    }
+                }
+                for (Rule<L,S> rule : deltaPrime) {
+                    if (rule.getEndConfiguration().getWord().size() == 1 &&
+                            rule.getEndConfiguration().getControlLocation().equals(current.getStartState()) &&
+                            rule.getEndConfiguration().getWord().get(0).equals(current.getLabel()))
+                    {
                         worklist.add(new PAutomaton.Transition<>(
                                 rule.getStartConfiguration().getControlLocation(),
                                 current.getEndState(),
@@ -70,19 +85,21 @@ public class HashBasedPreStar<L,S> extends Prestar<L,S>{
                 }
 
                 // Handle PDS Push Rules
-                for (Rule<L, S> rule : fastLookupMap.lookupByStartState(current.getStartState())) {
+                for (Rule<L,S> rule : fastLookupMap.lookupByEndState(current.getStartState())) {
                     if (rule.getEndConfiguration().getWord().size() == 2 &&
-                            rule.getEndConfiguration().getWord().get(0).equals(current.getLabel())) {
-                        fastLookupMap.addRule(new GeneratedRule<>(
+                            rule.getEndConfiguration().getWord().get(0).equals(current.getLabel()))
+                    {
+                        deltaPrime.add(new GeneratedRule<>(
                                 rule.getStartConfiguration().getControlLocation(),
                                 rule.getStartConfiguration().getStackSymbol(),
                                 current.getEndState(),
                                 rule.getEndConfiguration().getWord().get(1)
                         ));
 
-                        for (PAutomaton.Transition<L, S> transition : saturatedAut.getTransitionRelation()) {
+                        for (PAutomaton.Transition<L,S> transition : saturatedAut.getTransitionRelation()) {
                             if (transition.getStartState().equals(current.getEndState()) &&
-                                    transition.getLabel().equals(rule.getEndConfiguration().getWord().get(1))) {
+                                    transition.getLabel().equals(rule.getEndConfiguration().getWord().get(1)))
+                            {
                                 worklist.add(new PAutomaton.Transition<>(
                                         rule.getStartConfiguration().getControlLocation(),
                                         transition.getEndState(),
