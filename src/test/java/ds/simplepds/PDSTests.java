@@ -6,6 +6,10 @@ import ds.simplepds.automata.HashBasedPreStar;
 import ds.simplepds.automata.PAutomaton;
 import ds.simplepds.automata.Poststar;
 import ds.simplepds.automata.Prestar;
+import ds.simplepds.automata.demand.BackwardFlowFunctions;
+import ds.simplepds.automata.demand.DemandPostStar;
+import ds.simplepds.automata.demand.DemandPreStar;
+import ds.simplepds.automata.demand.ForwardFlowFunctions;
 import ds.simplepds.interfaces.ControlLocation;
 import ds.simplepds.interfaces.EndConfiguration;
 import ds.simplepds.interfaces.PushdownSystem;
@@ -19,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class PDSTests {
 
@@ -102,6 +107,27 @@ public class PDSTests {
     }
 
     @Test
+    public void testDemandPrestar() {
+        BackwardFlowFunctions<String,String> flowFunctions =
+                currentLocation -> pushAndPopPDS.getRules().stream()
+                    .filter(rule ->
+                            rule.getEndConfiguration().getControlLocation().unwrap().equals(currentLocation))
+                    .collect(Collectors.toSet());
+        DemandPreStar<String, String> prestar = new DemandPreStar<>(flowFunctions, initialAut);
+        prestar.apply();
+        System.out.println(prestar.getSaturatedAut().toDotString());
+        Set<PAutomaton.Transition<String, String>> relation = prestar.getSaturatedAut().getTransitionRelation();
+        assert relation.size() == 7;
+        assert relation.contains(TestUtils.createTransition("p2", "p0", "g2"));
+        assert relation.contains(TestUtils.createTransition("p0", "p0", "g1"));
+        assert relation.contains(TestUtils.createTransition("p0", "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", "s2", "g0"));
+        assert relation.contains(TestUtils.createTransition("p1", "s1", "g1"));
+        assert relation.contains(TestUtils.createTransition("p1", "s2", "g1"));
+        assert relation.contains(TestUtils.createTransition("s1", "s2", "g0"));
+    }
+
+    @Test
     public void testPoststar() {
         Map<Rule<String, String>, Integer> generatedStateIndexMap = new HashMap<>();
         FastLookupRuleMap<String, String> fastLookupRuleMap = new FastLookupRuleMap<>(pushAndPopPDS);
@@ -148,6 +174,40 @@ public class PDSTests {
         Set<PAutomaton.Transition<String, String>> relation = poststar.getSaturatedAut().getTransitionRelation();
         Poststar<String, String>.GeneratedState m1 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM1);
         Poststar<String, String>.GeneratedState m2 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM2);
+        assert relation.size() == 9;
+        assert relation.contains(TestUtils.createTransition("s1", "s2", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p0", m1, "g0"));
+        assert relation.contains(TestUtils.createTransition(m1, "s1", "g0"));
+        assert relation.contains(TestUtils.createTransition("p1", m1, "g1"));
+        assert relation.contains(TestUtils.createTransition(m1, m1, "g0"));
+        assert relation.contains(TestUtils.createTransition(m2, m1, "g0"));
+        assert relation.contains(TestUtils.createTransition("p2", m2, "g2"));
+        assert relation.contains(TestUtils.createTransition("p0", m2, "g1"));
+    }
+
+    @Test
+    public void testDemandPoststar() {
+        Map<Rule<String, String>, Integer> generatedStateIndexMap = new HashMap<>();
+        ForwardFlowFunctions<String, String> flowFunctions =
+                currentLocation -> pushAndPopPDS.getRules().stream()
+                    .filter(rule ->
+                            rule.getStartConfiguration().getControlLocation().unwrap().equals(currentLocation))
+                    .collect(Collectors.toSet());
+
+        DemandPostStar<String, String> poststar = new DemandPostStar<>(
+                flowFunctions,
+                initialAut,
+                rule -> {
+                    int index = generatedStateIndexMap.computeIfAbsent(rule, r -> generatedStateIndexMap.size() + 1);
+                    return "m" + index;
+                } // silly but effective way to get a simple unique identifier for generated states
+        );
+        poststar.apply();
+        System.out.println(poststar.getSaturatedAut().toDotString());
+        Set<PAutomaton.Transition<String, String>> relation = poststar.getSaturatedAut().getTransitionRelation();
+        DemandPostStar<String, String>.GeneratedState m1 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM1);
+        DemandPostStar<String, String>.GeneratedState m2 = poststar.createGeneratedStateFromRule(stateGeneratingRuleM2);
         assert relation.size() == 9;
         assert relation.contains(TestUtils.createTransition("s1", "s2", "g0"));
         assert relation.contains(TestUtils.createTransition("p0", "s1", "g0"));
