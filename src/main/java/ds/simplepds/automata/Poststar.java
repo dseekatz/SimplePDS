@@ -69,7 +69,7 @@ public class Poststar<L,S> {
                 worklist.add(new PAutomaton.Transition<>(
                         rule.getEndConfiguration().getControlLocation(),
                         generated,
-                        rule.getEndConfiguration().getWord().get(0)
+                        rule.getEndConfiguration().getWord().get(1)
                 ));
             }
         }
@@ -135,13 +135,13 @@ public class Poststar<L,S> {
                         saturatedAut.addTransition(new PAutomaton.Transition<>(
                                 generated,
                                 current.getEndState(),
-                                rule.getEndConfiguration().getWord().get(1)
+                                rule.getEndConfiguration().getWord().get(0)
                         ));
                         for (ControlLocation<L> state : incomingEpsilons.get(generated)) {
                             worklist.add(new PAutomaton.Transition<>(
                                     state,
                                     current.getEndState(),
-                                    rule.getEndConfiguration().getWord().get(1)
+                                    rule.getEndConfiguration().getWord().get(0)
                             ));
                         }
                     }

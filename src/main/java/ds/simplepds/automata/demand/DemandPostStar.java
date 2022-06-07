@@ -121,7 +121,7 @@ public class DemandPostStar<L,S>{
         worklist.add(new PAutomaton.Transition<>(
                 rule.getEndConfiguration().getControlLocation(),
                 generated,
-                rule.getEndConfiguration().getWord().get(0)
+                rule.getEndConfiguration().getWord().get(1)
         ));
 
         if (rule.getStartConfiguration().getStackSymbol().equals(current.getLabel())) {
@@ -129,13 +129,13 @@ public class DemandPostStar<L,S>{
             saturatedAut.addTransition(new PAutomaton.Transition<>(
                     newGenerated,
                     current.getEndState(),
-                    rule.getEndConfiguration().getWord().get(1)
+                    rule.getEndConfiguration().getWord().get(0)
             ));
             for (ControlLocation<L> state : incomingEpsilons.get(newGenerated)) {
                 worklist.add(new PAutomaton.Transition<>(
                         state,
                         current.getEndState(),
-                        rule.getEndConfiguration().getWord().get(1)
+                        rule.getEndConfiguration().getWord().get(0)
                 ));
             }
         }

@@ -85,18 +85,18 @@ public class Prestar<L,S> {
                 for (Rule<L,S> rule : pushdownSystem.getRules()) {
                     if (rule.getEndConfiguration().getWord().size() == 2 &&
                         rule.getEndConfiguration().getControlLocation().equals(current.getStartState()) &&
-                        rule.getEndConfiguration().getWord().get(0).equals(current.getLabel()))
+                        rule.getEndConfiguration().getWord().get(1).equals(current.getLabel()))
                     {
                         deltaPrime.add(new GeneratedRule<>(
                                 rule.getStartConfiguration().getControlLocation(),
                                 rule.getStartConfiguration().getStackSymbol(),
                                 current.getEndState(),
-                                rule.getEndConfiguration().getWord().get(1)
+                                rule.getEndConfiguration().getWord().get(0)
                         ));
 
                         for (PAutomaton.Transition<L,S> transition : saturatedAut.getTransitionRelation()) {
                             if (transition.getStartState().equals(current.getEndState()) &&
-                                transition.getLabel().equals(rule.getEndConfiguration().getWord().get(1)))
+                                transition.getLabel().equals(rule.getEndConfiguration().getWord().get(0)))
                             {
                                 worklist.add(new PAutomaton.Transition<>(
                                         rule.getStartConfiguration().getControlLocation(),

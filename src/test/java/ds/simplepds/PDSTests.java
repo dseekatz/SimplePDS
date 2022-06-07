@@ -47,8 +47,8 @@ public class PDSTests {
         StartConfiguration<String, String> p2g2Start = TestUtils.createStartConfiguration(p2, g2);
         StartConfiguration<String, String> p0g1Start = TestUtils.createStartConfiguration(p0, g1);
 
-        EndConfiguration<String, String> p1g1g0End = TestUtils.createPushEndConfiguration(p1, g1, g0);
-        EndConfiguration<String, String> p2g2g0End = TestUtils.createPushEndConfiguration(p2, g2, g0);
+        EndConfiguration<String, String> p1g1g0End = TestUtils.createPushEndConfiguration(p1, g0, g1);
+        EndConfiguration<String, String> p2g2g0End = TestUtils.createPushEndConfiguration(p2, g0, g2);
         EndConfiguration<String, String> p0g1End = TestUtils.createNormalEndConfiguration(p0, g1);
         EndConfiguration<String, String> p0End = TestUtils.createPopEndConfiguration(p0);
 
