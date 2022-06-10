@@ -88,6 +88,10 @@ public class DemandPostStar<L,S>{
                     current.getEndState(),
                     rule.getEndConfiguration().getWord().get(0)
             ));
+            // Special case of an epsilon transition encoded as a normal rule of the form <p1,g> --> <p2,g>
+            if (rule.getEndConfiguration().getWord().get(0).equals(rule.getStartConfiguration().getStackSymbol())) {
+                incomingEpsilons.put(current.getEndState(), rule.getEndConfiguration().getControlLocation());
+            }
         }
     }
 
@@ -101,11 +105,23 @@ public class DemandPostStar<L,S>{
             incomingEpsilons.put(current.getEndState(), rule.getEndConfiguration().getControlLocation());
             for (PAutomaton.Transition<L,S> transition : saturatedAut.getTransitionRelation()) {
                 if (transition.getStartState().equals(current.getEndState())) {
-                    worklist.add(new PAutomaton.Transition<>(
-                            rule.getEndConfiguration().getControlLocation(),
-                            transition.getEndState(),
-                            transition.getLabel()
-                    ));
+                    if (incomingEpsilons.containsEntry(current.getEndState(), current.getStartState()) &&
+                        !(rule.getStartConfiguration().getControlLocation().equals(rule.getEndConfiguration().getControlLocation()))) {
+                        // "current" is already an epsilon transition, so the NEW transition should ignore the
+                        // label on "transition" and use the epsilon label instead. The exception is if the current
+                        // rule should create a self-loop
+                        worklist.add(new PAutomaton.Transition<>(
+                                rule.getEndConfiguration().getControlLocation(),
+                                transition.getEndState(),
+                                current.getLabel() // epsilon label
+                        ));
+                    } else {
+                        worklist.add(new PAutomaton.Transition<>(
+                                rule.getEndConfiguration().getControlLocation(),
+                                transition.getEndState(),
+                                transition.getLabel()
+                        ));
+                    }
                 }
             }
             if (saturatedAut.getFinalStates().contains(current.getEndState())) {

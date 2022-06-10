@@ -188,6 +188,11 @@ public class TestUtils {
         public int hashCode() {
             return Objects.hash(value);
         }
+
+        @Override
+        public String toString() {
+            return value;
+        }
     }
 
     public static class TestStackSymbol implements StackSymbol<String> {
@@ -214,6 +219,11 @@ public class TestUtils {
         @Override
         public int hashCode() {
             return Objects.hash(s);
+        }
+
+        @Override
+        public String toString() {
+            return s;
         }
     }
 }
