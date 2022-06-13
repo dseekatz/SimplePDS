@@ -106,10 +106,10 @@ public class DemandPostStar<L,S>{
                             transition.getEndState(),
                             transition.getLabel()
                     ));
+                    if (saturatedAut.getFinalStates().contains(current.getEndState())) {
+                        saturatedAut.addFinalState(rule.getEndConfiguration().getControlLocation());
+                    }
                 }
-            }
-            if (saturatedAut.getFinalStates().contains(current.getEndState())) {
-                saturatedAut.addFinalState(rule.getEndConfiguration().getControlLocation());
             }
         }
     }
