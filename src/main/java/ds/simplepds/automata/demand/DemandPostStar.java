@@ -28,9 +28,9 @@ public class DemandPostStar<L,S>{
     private final ForwardFlowFunctions<L,S> flowFunction;
     private final PAutomaton<L,S> initialAutomaton;
     private final Function<Rule<L,S>, L> generatedStateIdentifierFunction;
-    private final PAutomaton<L,S> saturatedAut = new PAutomaton<>();
-    private final Multimap<ControlLocation<L>, ControlLocation<L>> incomingEpsilons = HashMultimap.create();
-    private final Queue<PAutomaton.Transition<L, S>> worklist;
+    protected final PAutomaton<L,S> saturatedAut = new PAutomaton<>();
+    protected final Multimap<ControlLocation<L>, ControlLocation<L>> incomingEpsilons = HashMultimap.create();
+    protected final Queue<PAutomaton.Transition<L, S>> worklist;
 
     public DemandPostStar(
             ForwardFlowFunctions<L,S> flowFunction,
@@ -81,7 +81,7 @@ public class DemandPostStar<L,S>{
         }
     }
 
-    private void handleNormalRule(Rule<L, S> rule,  PAutomaton.Transition<L,S> current) {
+    protected void handleNormalRule(Rule<L, S> rule,  PAutomaton.Transition<L,S> current) {
         if (rule.getStartConfiguration().getStackSymbol().equals(current.getLabel())) {
             worklist.add(new PAutomaton.Transition<>(
                     rule.getEndConfiguration().getControlLocation(),
@@ -91,7 +91,7 @@ public class DemandPostStar<L,S>{
         }
     }
 
-    private void handlePopRule(Rule<L, S> rule,  PAutomaton.Transition<L,S> current) {
+    protected void handlePopRule(Rule<L, S> rule,  PAutomaton.Transition<L,S> current) {
         if (rule.getStartConfiguration().getStackSymbol().equals(current.getLabel()) &&
                 !incomingEpsilons.containsEntry(
                         current.getEndState(),
@@ -114,7 +114,7 @@ public class DemandPostStar<L,S>{
         }
     }
 
-    private void handlePushRule(Rule<L, S> rule,  PAutomaton.Transition<L,S> current) {
+    protected void handlePushRule(Rule<L, S> rule,  PAutomaton.Transition<L,S> current) {
         // Initial push rule processing
         GeneratedState generated = new GeneratedState(rule);
         saturatedAut.addState(generated);

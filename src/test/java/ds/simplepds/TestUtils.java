@@ -2,6 +2,7 @@ package ds.simplepds;
 
 import ds.simplepds.automata.PAutomaton;
 import ds.simplepds.automata.Poststar;
+import ds.simplepds.automata.demand.Wildcard;
 import ds.simplepds.interfaces.ControlLocation;
 import ds.simplepds.interfaces.EndConfiguration;
 import ds.simplepds.interfaces.PushdownSystem;
@@ -17,12 +18,23 @@ import java.util.Set;
 
 public class TestUtils {
 
+    private static final Wildcard<String> wildcard = new Wildcard<>() {
+        @Override
+        public String unwrap() {
+            return "*";
+        }
+    };
+
     public static ControlLocation<String> createControlLocation(String s) {
         return new TestControlLocation(s);
     }
 
     public static StackSymbol<String> createStackSymbol(String s) {
         return new TestStackSymbol(s);
+    }
+
+    public static StackSymbol<String> getWildcardStackSymbol() {
+        return wildcard;
     }
 
     public static StartConfiguration<String, String> createStartConfiguration(
@@ -163,6 +175,14 @@ public class TestUtils {
         return instance.createGeneratedStateFromRule(rule);
     }
 
+    public static PAutomaton.Transition<String, String> createTransition(
+            ControlLocation<String> s1,
+            ControlLocation<String> s2,
+            StackSymbol<String> label
+    ) {
+        return new PAutomaton.Transition<>(s1, s2, label);
+    }
+
     public static class TestControlLocation implements ControlLocation<String> {
 
         private final String value;
@@ -210,6 +230,7 @@ public class TestUtils {
 
         @Override
         public boolean equals(Object o) {
+            if (o instanceof Wildcard<?>) return true;
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             TestStackSymbol that = (TestStackSymbol) o;

@@ -10,6 +10,7 @@ import ds.simplepds.automata.demand.BackwardFlowFunctions;
 import ds.simplepds.automata.demand.DemandPostStar;
 import ds.simplepds.automata.demand.DemandPreStar;
 import ds.simplepds.automata.demand.ForwardFlowFunctions;
+import ds.simplepds.automata.demand.WildcardPostStar;
 import ds.simplepds.interfaces.ControlLocation;
 import ds.simplepds.interfaces.EndConfiguration;
 import ds.simplepds.interfaces.PushdownSystem;
@@ -272,5 +273,66 @@ public class PDSTests {
         );
         poststar.apply();
         System.out.println(poststar.getSaturatedAut().toDotString());
+    }
+
+    @Test
+    public void testWildcardPoststarSimplePop() {
+        ControlLocation<String> f = TestUtils.createControlLocation("f");
+        ControlLocation<String> push1 = TestUtils.createControlLocation("push1");
+        ControlLocation<String> push2 = TestUtils.createControlLocation("push2");
+        ControlLocation<String> pop1 = TestUtils.createControlLocation("pop1");
+        ControlLocation<String> pop2 = TestUtils.createControlLocation("pop2");
+        ControlLocation<String> normal = TestUtils.createControlLocation("normal");
+        StackSymbol<String> c1 = TestUtils.createStackSymbol("c1");
+        StackSymbol<String> c2 = TestUtils.createStackSymbol("c2");
+        StackSymbol<String> w = TestUtils.getWildcardStackSymbol();
+
+        StartConfiguration<String, String> push1Start = TestUtils.createStartConfiguration(f, w);
+        StartConfiguration<String, String> push2Start = TestUtils.createStartConfiguration(push1, c1);
+        StartConfiguration<String, String> pop1Start = TestUtils.createStartConfiguration(normal, c2);
+        StartConfiguration<String, String> pop2Start = TestUtils.createStartConfiguration(pop1, c1);
+        StartConfiguration<String, String> normalStart = TestUtils.createStartConfiguration(push2, w);
+
+        EndConfiguration<String, String> push1End = TestUtils.createPushEndConfiguration(push1, c1, w);
+        EndConfiguration<String, String> push2End = TestUtils.createPushEndConfiguration(push2, c2, c1);
+        EndConfiguration<String, String> pop1End = TestUtils.createPopEndConfiguration(pop1);
+        EndConfiguration<String, String> pop2End = TestUtils.createPopEndConfiguration(pop2);
+        EndConfiguration<String, String> normalEnd = TestUtils.createNormalEndConfiguration(normal, w);
+
+        Set<Rule<String, String>> rules = new HashSet<>();
+        rules.add(TestUtils.createRule(push1Start, push1End));
+        rules.add(TestUtils.createRule(push2Start, push2End));
+        rules.add(TestUtils.createRule(pop1Start, pop1End));
+        rules.add(TestUtils.createRule(pop2Start, pop2End));
+        rules.add(TestUtils.createRule(normalStart, normalEnd));
+
+        PushdownSystem<String, String> pds = TestUtils.createPDS(rules);
+
+        PAutomaton<String, String> aut = new PAutomaton<>();
+        ControlLocation<String> s = TestUtils.createControlLocation("s");
+        aut.addFinalState(s);
+        aut.addTransition(TestUtils.createTransition(f, s, "w"));
+        aut.addInitialState(f);
+
+        Map<Rule<String, String>, Integer> generatedStateIndexMap = new HashMap<>();
+        ForwardFlowFunctions<String, String> flowFunctions =
+                currentLocation -> pds.getRules().stream()
+                        .filter(rule ->
+                                rule.getStartConfiguration().getControlLocation().unwrap().equals(currentLocation))
+                        .collect(Collectors.toSet());
+
+        WildcardPostStar<String, String> poststar = new WildcardPostStar<>(
+                flowFunctions,
+                aut,
+                rule -> {
+                    int index = generatedStateIndexMap.computeIfAbsent(rule, r -> generatedStateIndexMap.size() + 1);
+                    return "m" + index;
+                } // silly but effective way to get a simple unique identifier for generated states
+        );
+        poststar.apply();
+        System.out.println(poststar.getSaturatedAut().toDotString());
+        assert poststar.getSaturatedAut().getTransitionRelation().contains(
+                TestUtils.createTransition(pop2, s, w)
+        );
     }
 }
