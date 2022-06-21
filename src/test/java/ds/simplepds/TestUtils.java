@@ -23,6 +23,11 @@ public class TestUtils {
         public String unwrap() {
             return "*";
         }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof StackSymbol<?>;
+        }
     };
 
     public static ControlLocation<String> createControlLocation(String s) {
