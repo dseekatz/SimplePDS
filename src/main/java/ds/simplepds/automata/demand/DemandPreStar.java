@@ -24,9 +24,9 @@ import java.util.Set;
 public class DemandPreStar<L,S> {
     private final BackwardFlowFunctions<L,S> flowFunction;
     private final PAutomaton<L,S> initialAutomaton;
-    private final PAutomaton<L,S> saturatedAut = new PAutomaton<>();
-    private final Queue<PAutomaton.Transition<L, S>> worklist;
-    private final Set<Rule<L,S>> deltaPrime = new HashSet<>();
+    protected final PAutomaton<L,S> saturatedAut = new PAutomaton<>();
+    protected final Queue<PAutomaton.Transition<L, S>> worklist;
+    protected final Set<Rule<L,S>> deltaPrime = new HashSet<>();
 
     public DemandPreStar(BackwardFlowFunctions<L, S> flowFunction, PAutomaton<L, S> initialAutomaton) {
         this.flowFunction = flowFunction;
@@ -66,7 +66,7 @@ public class DemandPreStar<L,S> {
         }
     }
 
-    private void handleNormalRule(Rule<L, S> rule, PAutomaton.Transition<L, S> current) {
+    protected void handleNormalRule(Rule<L, S> rule, PAutomaton.Transition<L, S> current) {
         if (rule.getEndConfiguration().getWord().get(0).equals(current.getLabel())) {
             worklist.add(new PAutomaton.Transition<>(
                     rule.getStartConfiguration().getControlLocation(),
@@ -76,7 +76,7 @@ public class DemandPreStar<L,S> {
         }
     }
 
-    private void handlePopRule(Rule<L, S> rule, PAutomaton.Transition<L, S> current) {
+    protected void handlePopRule(Rule<L, S> rule, PAutomaton.Transition<L, S> current) {
         worklist.add(
                 new PAutomaton.Transition<>(
                         rule.getStartConfiguration().getControlLocation(),
@@ -86,18 +86,18 @@ public class DemandPreStar<L,S> {
         );
     }
 
-    private void handlePushRule(Rule<L, S> rule, PAutomaton.Transition<L, S> current) {
-        if (rule.getEndConfiguration().getWord().get(1).equals(current.getLabel())) {
+    protected void handlePushRule(Rule<L, S> rule, PAutomaton.Transition<L, S> current) {
+        if (rule.getEndConfiguration().getWord().get(0).equals(current.getLabel())) {
             deltaPrime.add(new GeneratedRule<>(
                     rule.getStartConfiguration().getControlLocation(),
                     rule.getStartConfiguration().getStackSymbol(),
                     current.getEndState(),
-                    rule.getEndConfiguration().getWord().get(0)
+                    rule.getEndConfiguration().getWord().get(1)
             ));
 
             for (PAutomaton.Transition<L,S> transition : saturatedAut.getTransitionRelation()) {
                 if (transition.getStartState().equals(current.getEndState()) &&
-                        transition.getLabel().equals(rule.getEndConfiguration().getWord().get(0)))
+                        transition.getLabel().equals(rule.getEndConfiguration().getWord().get(1)))
                 {
                     worklist.add(new PAutomaton.Transition<>(
                             rule.getStartConfiguration().getControlLocation(),

@@ -28,6 +28,11 @@ public class TestUtils {
         public boolean equals(Object o) {
             return o instanceof StackSymbol<?>;
         }
+
+        @Override
+        public String toString() {
+            return "w";
+        }
     };
 
     public static ControlLocation<String> createControlLocation(String s) {
