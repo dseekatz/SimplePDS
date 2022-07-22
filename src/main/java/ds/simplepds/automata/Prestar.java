@@ -115,6 +115,10 @@ public class Prestar<L,S> {
         return saturatedAut;
     }
 
+    public PAutomaton<L, S> getInitialAut() {
+        return initialAut;
+    }
+
     protected static class GeneratedRule<L,S> implements Rule<L,S> {
 
         private final StartConfiguration<L,S> startConfiguration;

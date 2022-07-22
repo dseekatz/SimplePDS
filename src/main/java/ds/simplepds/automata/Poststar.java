@@ -154,6 +154,10 @@ public class Poststar<L,S> {
         return saturatedAut;
     }
 
+    public PAutomaton<L, S> getInitialAut() {
+        return initialAut;
+    }
+
     public GeneratedState createGeneratedStateFromRule(Rule<L,S> rule) {
         return new GeneratedState(rule);
     }
