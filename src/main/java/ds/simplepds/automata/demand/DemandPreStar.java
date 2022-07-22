@@ -113,6 +113,10 @@ public class DemandPreStar<L,S> {
         return saturatedAut;
     }
 
+    public PAutomaton<L, S> getInitialAutomaton() {
+        return initialAutomaton;
+    }
+
     protected static class GeneratedRule<L,S> implements Rule<L,S> {
 
         private final StartConfiguration<L,S> startConfiguration;

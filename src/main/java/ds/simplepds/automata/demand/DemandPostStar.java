@@ -145,6 +145,10 @@ public class DemandPostStar<L,S>{
         return saturatedAut;
     }
 
+    public PAutomaton<L, S> getInitialAutomaton() {
+        return initialAutomaton;
+    }
+
     public GeneratedState createGeneratedStateFromRule(Rule<L, S> rule) {
         return new GeneratedState(rule);
     }
